@@ -15,6 +15,7 @@ export interface MenuItem {
 	items?: MenuItem[]
 	icon?: string
 	isTemplateIcon?: boolean
+	click?: () => void
 }
 
 interface MenuItemEx extends MenuItem {
@@ -77,19 +78,14 @@ export interface Conf {
 	directory?: string | undefined
 }
 
-const CHECK_STR = " (√)"
+const CHECK_STR = "[√] "
 function updateCheckedInLinux(item: MenuItem) {
-	if (Deno.build.os !== "linux") {
-		return
-	}
-	if (item.checked) {
-		item.title += CHECK_STR
-	} else {
-		item.title = (item.title || "").replace(RegExp(CHECK_STR + "$"), "")
-	}
-	if (item.items != null) {
-		item.items.forEach(updateCheckedInLinux)
-	}
+	if (Deno.build.os !== "linux") return
+
+	if (item.checked) item.title = CHECK_STR + item.title
+	else item.title = (item.title || "").replace(/^\[√\] /, "")
+
+	if (item.items != null) item.items.forEach(updateCheckedInLinux)
 }
 
 async function loadIcon(fileName: string) {
@@ -149,7 +145,7 @@ function menuTrimmer(menu: Menu) {
 	}
 }
 
-function actionTrimer(action: Action) {
+function actionTrimmer(action: Action) {
 	if (action.type === "update-item") {
 		return {
 			type: action.type,
@@ -177,19 +173,9 @@ function actionTrimer(action: Action) {
 
 const getTrayPath = async () => {
 	let binName = ""
-	switch (Deno.build.os) {
-		case "windows":
-			binName = `${url}/tray_windows.exe`
-			break
-
-		case "darwin":
-			binName = `${url}/tray_darwin`
-			break
-
-		default:
-			binName = `${url}/tray_linux`
-			break
-	}
+	if (Deno.build.os === "windows") binName = `${url}/tray_windows.exe`
+	else if (Deno.build.os === "darwin") binName = `${url}/tray_darwin`
+	else binName = `${url}/tray_linux`
 
 	const file = await downloadAndCache(binName)
 	return file.path
@@ -340,7 +326,7 @@ export default class SysTray extends EventEmitter<Events> {
 		if (this._conf.debug) {
 			log("%s %o", "sendAction", action)
 		}
-		this.writeLine(JSON.stringify(actionTrimer(action)))
+		this.writeLine(JSON.stringify(actionTrimmer(action)))
 		return this
 	}
 
@@ -350,9 +336,7 @@ export default class SysTray extends EventEmitter<Events> {
 	 */
 	kill(exitNode = true) {
 		this.once("exit", () => {
-			if (exitNode) {
-				Deno.exit()
-			}
+			if (exitNode) Deno.exit()
 		})
 
 		this.sendAction({
