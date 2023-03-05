@@ -4,12 +4,20 @@
   },
   "lint": {
     "files": {
-      "include": ["mod.ts", "deps.ts", "example/"]
+      "include": [
+        "mod.ts",
+        "deps.ts",
+        "example/"
+      ]
     }
   },
   "fmt": {
     "files": {
-      "include": ["mod.ts", "deps.ts", "example/"]
+      "include": [
+        "mod.ts",
+        "deps.ts",
+        "example/"
+      ]
     },
     "options": {
       "singleQuote": true
